@@ -1,6 +1,5 @@
 package com.example.igor.deezclient.viewModels
 
-import android.arch.lifecycle.AndroidViewModel
 import android.arch.lifecycle.LifecycleOwner
 import android.arch.lifecycle.MutableLiveData
 import android.util.Log
@@ -8,7 +7,7 @@ import com.example.igor.deezclient.application.DeezApplication
 import com.example.igor.deezclient.data.RepositoryInterface
 import com.example.igor.deezclient.data.common.ErrorModel
 import com.example.igor.deezclient.data.server.model.TrackModel
-import com.example.igor.deezclient.utils.SingleLiveEvent
+import com.example.igor.deezclient.data.server.response.tracks.Track
 import com.igorkazakov.user.foursquareclient.data.server.Repository
 import com.trello.rxlifecycle2.android.lifecycle.kotlin.bindToLifecycle
 import io.reactivex.Observable
@@ -20,11 +19,13 @@ class PlaylistViewModel(application: DeezApplication,
         BaseViewModel<ErrorModel>(application) {
 
     var playlistLiveData: MutableLiveData<List<TrackModel>> = MutableLiveData()
+    private var mTotalResponseItems: Int = 1
+    var mIsLoading: Boolean = false
 
     fun needLoadAdditionalData(visibleItemCount: Int,
                                totalItemCount: Int,
                                firstVisibleItemPosition: Int): Boolean {
-        
+
         return visibleItemCount + firstVisibleItemPosition >= totalItemCount
                 && firstVisibleItemPosition >= 0
                 && totalItemCount >= Repository.PAGE_SIZE
@@ -32,19 +33,39 @@ class PlaylistViewModel(application: DeezApplication,
 
     fun loadPlaylist(playlistId: Int, offset: Int, lifecycleOwner: LifecycleOwner) {
 
-        mRepository.loadTracks(playlistId.toString(), offset)
-                .bindToLifecycle(lifecycleOwner)
-                .flatMap { Observable.fromIterable(it) }
-                .map { TrackModel(it) }
-                .toList()
-                .toObservable()
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe({
+        if (!mIsLoading) {
 
-                    if (it.isNotEmpty()) playlistLiveData.value = it
+            mIsLoading = true
+            
+            mRepository.loadTracks(playlistId.toString(), offset, mTotalResponseItems)
+                    .subscribeOn(Schedulers.io())
+                    .flatMap {
 
-                }, {
-                    errorsLiveData.value = ErrorModel(it.message, it.message)
-                })
+                        it.total?.let {
+                            mTotalResponseItems = it
+                        }
+
+                        if (it.data == null) {
+                            Observable.empty<List<TrackModel>>()
+
+                        } else {
+                            Observable.fromArray(it.data)
+                        }
+                    }
+                    .bindToLifecycle(lifecycleOwner)
+                    .flatMap { Observable.fromIterable(it) }
+                    .map { TrackModel(it as Track) }
+                    .toList()
+                    .toObservable()
+                    .doOnTerminate({ mIsLoading = false })
+                    .observeOn(AndroidSchedulers.mainThread())
+                    .subscribe({
+
+                        if (it.isNotEmpty()) playlistLiveData.value = it
+
+                    }, {
+                        errorsLiveData.value = ErrorModel(it.message, it.message)
+                    })
+        }
     }
 }
