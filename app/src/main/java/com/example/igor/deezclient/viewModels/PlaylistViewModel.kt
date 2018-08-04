@@ -33,11 +33,11 @@ class PlaylistViewModel(application: DeezApplication,
 
     fun loadPlaylist(playlistId: Int, offset: Int, lifecycleOwner: LifecycleOwner) {
 
-        if (!mIsLoading) {
+        if (!mIsLoading && mTotalResponseItems > offset) {
 
             mIsLoading = true
-            
-            mRepository.loadTracks(playlistId.toString(), offset, mTotalResponseItems)
+
+            mRepository.loadTracks(playlistId.toString(), offset)
                     .subscribeOn(Schedulers.io())
                     .flatMap {
 
@@ -45,16 +45,11 @@ class PlaylistViewModel(application: DeezApplication,
                             mTotalResponseItems = it
                         }
 
-                        if (it.data == null) {
-                            Observable.empty<List<TrackModel>>()
-
-                        } else {
-                            Observable.fromArray(it.data)
-                        }
+                        Observable.fromArray(it.data)
                     }
                     .bindToLifecycle(lifecycleOwner)
                     .flatMap { Observable.fromIterable(it) }
-                    .map { TrackModel(it as Track) }
+                    .map { TrackModel(it) }
                     .toList()
                     .toObservable()
                     .doOnTerminate({ mIsLoading = false })

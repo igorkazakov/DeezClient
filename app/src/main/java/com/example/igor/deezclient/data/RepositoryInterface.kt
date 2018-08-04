@@ -8,5 +8,5 @@ import io.reactivex.Observable
 interface RepositoryInterface {
 
     fun loadPlaylists() : Observable<List<Playlist>>
-    fun loadTracks(playlistId: String, offset: Int, total: Int) : Observable<TracksResponse>
+    fun loadTracks(playlistId: String, offset: Int) : Observable<TracksResponse>
 }

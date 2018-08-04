@@ -45,13 +45,8 @@ class Repository private constructor() : RepositoryInterface {
                 }
     }
 
-    override fun loadTracks(playlistId: String, offset: Int, total: Int) : Observable<TracksResponse> {
+    override fun loadTracks(playlistId: String, offset: Int) : Observable<TracksResponse> {
 
-        return if (total > offset) {
-            service.tracks(playlistId, PAGE_SIZE, offset)
-
-        } else {
-            Observable.fromArray(TracksResponse())
-        }
+        return service.tracks(playlistId, PAGE_SIZE, offset)
     }
 }
