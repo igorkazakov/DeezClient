@@ -19,11 +19,13 @@ class Repository private constructor() : RepositoryInterface {
 
     companion object {
         val instance: Repository by lazy { HOLDER.INSTANCE }
+
         const val PAGE_SIZE = 20
     }
 
     private val baseUrl = "https://api.deezer.com/"
     private val clientId = "5"
+    private var mTotalResponseItems: Int = 1
 
     private val service: DeezApi by lazy {
         Retrofit.Builder()
@@ -46,11 +48,19 @@ class Repository private constructor() : RepositoryInterface {
 
     override fun loadTracks(playlistId: String, offset: Int) : Observable<List<Track>> {
 
-        return service.tracks(playlistId, PAGE_SIZE, offset)
-                .subscribeOn(Schedulers.io())
-                .flatMap {
+        if (mTotalResponseItems > offset) {
+            return service.tracks(playlistId, PAGE_SIZE, offset)
+                    .subscribeOn(Schedulers.io())
+                    .flatMap {
 
-                    Observable.fromArray(it.data)
-                }
+                        it.total?.let {
+                            mTotalResponseItems = it
+                        }
+                        Observable.fromArray(it.data)
+                    }
+        } else {
+
+            return Observable.fromArray(ArrayList())
+        }
     }
 }

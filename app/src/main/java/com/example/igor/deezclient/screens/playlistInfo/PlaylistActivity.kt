@@ -99,7 +99,6 @@ class PlaylistActivity : BaseActivity() {
                                 totalItemCount,
                                 firstVisibleItemPosition)) {
 
-                    mActivityPlayListBinding.recyclerView.stopScroll()
                     loadData()
                 }
             }

@@ -3,6 +3,7 @@ package com.example.igor.deezclient.viewModels
 import android.arch.lifecycle.AndroidViewModel
 import android.arch.lifecycle.LifecycleOwner
 import android.arch.lifecycle.MutableLiveData
+import android.util.Log
 import com.example.igor.deezclient.application.DeezApplication
 import com.example.igor.deezclient.data.RepositoryInterface
 import com.example.igor.deezclient.data.common.ErrorModel
@@ -23,7 +24,7 @@ class PlaylistViewModel(application: DeezApplication,
     fun needLoadAdditionalData(visibleItemCount: Int,
                                totalItemCount: Int,
                                firstVisibleItemPosition: Int): Boolean {
-
+        
         return visibleItemCount + firstVisibleItemPosition >= totalItemCount
                 && firstVisibleItemPosition >= 0
                 && totalItemCount >= Repository.PAGE_SIZE
@@ -40,7 +41,7 @@ class PlaylistViewModel(application: DeezApplication,
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
 
-                    playlistLiveData.value = it
+                    if (it.isNotEmpty()) playlistLiveData.value = it
 
                 }, {
                     errorsLiveData.value = ErrorModel(it.message, it.message)
